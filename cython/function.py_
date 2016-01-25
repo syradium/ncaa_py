@@ -1,0 +1,11 @@
+import scipy.optimize
+
+def f(x, a0, b0, p0, q0, i0):
+    s = 0
+    for i in range(i0 + 1):
+        s += p0[i] / (x - q0[i])
+    return x - a0 - b0 * s
+
+
+def find_root(a, b, a0, b0, p0, q0, i0):
+    return scipy.optimize.brentq(f, a, b, args=(a0, b0, p0, q0, i0), xtol=1e-12)
