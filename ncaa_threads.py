@@ -1,19 +1,15 @@
+from collections import defaultdict
+from constants import *
 from functools import partial
 from functools import reduce
-import json
 from math import cos, sin, atan, log
 from multiprocessing import Pool
-import logging
-from collections import defaultdict
-
-from numpy import matlib
-import numpy as np
 from numpy import complex
+from numpy import matlib
+import json
+import logging
+import numpy as np
 import scipy.optimize
-
-eps = 1e-12
-delta = 1e-10
-L = 3
 
 
 def build_hamiltonian(theta_angles, phi_angles, N, M, E0, U0, V, dh=0):
