@@ -122,27 +122,6 @@ def CN(t, imax):
 
 
 def calculate_energy(t, imax):
-#    s1 = 0.0
-#    s2 = 0.0
-#    s3 = 0.0
-#
-#    for i in range(0, imax + 1):
-#        PQ = t[0][i] * t[1][i]
-#        s1 += PQ
-#        s2 += PQ * atan(t[1][i])
-#        s3 += t[0][i] * log(t[1][i] * t[1][i] + 1)
-#
-#    return 0.5 * s1 - (s2 - 0.5 * s3) * 0.318309886183790671
-
-#    def f(i):
-#        PQ = t[0][i] * t[1][i]
-#        s1 = PQ
-#        s2 = PQ * atan(t[1][i])
-#        s3 = t[0][i] * log(t[1][i] * t[1][i] + 1)
-#        return (s1, s2, s3)
-#
-#    result = reduce(lambda x, y: (x[0] + y[0], x[1] + y[1], x[2] + y[2]), map(f, range(0, imax + 1)))
-#    return result[0] * 0.5 - (result[1] - 0.5 * result[2]) * 0.318309886183790671
     s1 = map(lambda i: t[0][i] * t[1][i], range(imax + 1))
     s2 = map(lambda i: t[0][i] * t[1][i] * atan(t[1][i]), range(imax + 1))
     s3 = map(lambda i: t[0][i] * log(t[1][i] * t[1][i] + 1), range(imax + 1))

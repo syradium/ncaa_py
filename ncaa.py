@@ -122,20 +122,12 @@ def build_green_fraction(a, b):
 
 
 def CN(t, imax):
-    # s1 = 0.0
-    # s2 = 0.0
-
-    # for i in range(0, imax + 1):
-        # s1 += t[0][i]
-        # s2 += t[0][i] * atan(t[1][i])
     s2 = sum(map(lambda i: t[0][i] * atan(t[1][i]), range(0, imax + 1)))
     return 0.5 - s2 * 0.318309886183790671
 
 
 def calculate_energy(t, imax):
-    s1 = 0.0
-    s2 = 0.0
-    s3 = 0.0
+    s1, s2, s3 = 0.0, 0.0, 0.0
 
     for i in range(0, imax + 1):
         PQ = t[0][i] * t[1][i]
