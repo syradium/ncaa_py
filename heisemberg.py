@@ -29,7 +29,6 @@ J[2, 3] = -J[2, 3] * 2
 J[9, 10] = -J[9, 10] * 2
 
 J = (J + J.T)
-print(J)
 
 
 def plot(angles):
@@ -83,7 +82,6 @@ def find_minima_antigradient(angles, m):
         G = gradient(angles, m)
         force = LA.norm(G)
 
-        print(force)
         if force < 1e-8:
             return angles
 
