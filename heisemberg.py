@@ -45,9 +45,9 @@ def plot(angles):
 
 def energy(angles, m):
     s1, s2 = 0.0, 0.0
-    for i in range(N):
+    for i in range(1, N):
         s1 -= K[i] * (m[i] * cos(angles[i])) ** 2
-        for j in range(N):
+        for j in range(1, N):
             if J[i, j]:
                 s2 -= 0.5 * J[i, j] * cos(angles[i] - angles[j]) * m[i] * m[j]
     return s1 + s2
@@ -95,7 +95,7 @@ def path_tanget(i, path, energies):
 
     if E3 > E2 and E2 > E1:
             for j in range(N):
-                tau[i] = path[i + 1, j] - path[i, j];
+                tau[j] = path[i + 1, j] - path[i, j];
     elif E3 < E2 and E2 < E1:
             for j in range(N):
                 tau[j] = path[i, j] - path[i - 1, j];
