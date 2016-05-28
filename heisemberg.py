@@ -137,7 +137,7 @@ def mep(number_of_images, initial_state, final_state):
             gradients[j] = gradient(path[j], M)
             energies[j] = energy(path[j], M)
 
-        max_energy_point = np.argmin(energies)
+        max_energy_point = np.argmax(energies)
         result_force = np.zeros((N,))
         for i in range(1, number_of_images - 1):
             tau_vector = path_tanget(i, path, energies)
