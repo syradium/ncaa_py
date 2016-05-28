@@ -6,32 +6,51 @@ import matplotlib.pyplot as plt
 import math
 import copy
 import random
+import time
+import datetime
+import os
+
 
 N = 13
 # coupling intergral
-#init_J = [0.1] * 3 + [0.7] * 7 + [0.1] * 3
 init_J = [0.3] * 3 + [0.1] * 7 + [0.3] * 3
 # magnetic moments
 M = [2.2] * 3 + [0.6] * 7 + [2.2] * 3
 
-# Phi angles
-dot1 = np.array([0] * 3 + [pi, 0, pi, 0, pi, 0, pi] + [0.0] * 3)
-dot2 = np.array([-8.92412738e-04, -2.08229603e-03, -6.04857611e-03, 3.06932607e+00, 2.56265103e+00, 2.05576667e+00, 1.54869391e+00, 1.04163163e+00, 5.34769046e-01, 2.81072522e-02, 3.14764130e+00, 3.14367498e+00, 3.14248508e+00])
+# Initial guess of phi angles of minimas on energy surfaces
+initial_guess = [
+        np.array([0] * 3 + [pi, 0, pi, 0, pi, 0, pi] + [0.0] * 3),
+        np.array([0, 0, 0, 3.06932607e+00, 2.56265103e+00, 2.05576667e+00, 1.54869391e+00, 1.04163163e+00, 5.34769046e-01, 2.81072522e-02, pi, pi, pi])
+]
 
 # anysotropy
-K = [1e-1] * 3 + [1e-5] * 7 + [1e-1] * 3
+K = [1] * 3 + [1e-5] * 7 + [1] * 3
 
 J = np.zeros((N, N))
 for i in range(1, N):
     J[i - 1][i] = init_J[i]
 
-J[2, 3] = -J[2, 3] * 2
-J[9, 10] = -J[9, 10] * 2
+J[2, 3] = -J[2, 3]
+J[9, 10] = -J[9, 10]
 
 J = (J + J.T)
 
 
-def plot(angles):
+def plot_energies_along_path(arr):
+    energies = arr[:,1]
+    energies -= min(energies)
+
+    interp = pchip(arr[:,0], energies)
+    xx = np.linspace(arr.min(), arr.max(), 200)
+
+    plt.plot(xx, interp(xx))
+    plt.plot(arr[:,0], energies, 'bo')
+    plt.grid(True)
+
+    save_fig('energies')
+
+
+def plot_magnetic_moments(angles, name='cluster'):
     ax = plt.axes()
     ax.set_xlim([-1.5, (N + 1) * 1.5])
     ax.set_ylim([-max(M) - 1, max(M) + 1])
@@ -41,7 +60,19 @@ def plot(angles):
             dx = M[i] * sin(angles[i])
             dy = M[i] * cos(angles[i])
             ax.arrow(i * 1.5, 0, dx, dy, head_width=0.05, head_length=0.1, fc='k', ec='k')
-    plt.show()
+
+    save_fig(name)
+
+
+def save_fig(name):
+    while True:
+        unixtime = time.mktime(datetime.datetime.now().timetuple())
+        path = '/usr/share/nginx/html/graphs/{}_{}.png'.format(name, unixtime)
+        if not os.path.exists(path):
+            plt.savefig(path, dpi=200)
+            plt.clf()
+            return
+
 
 def energy(angles, m):
     s1, s2 = 0.0, 0.0
@@ -71,14 +102,13 @@ def find_minima_numpy(angles, m):
     def jacobian(angles):
         return gradient(angles, m)
 
-    result = minimize(func, angles, tol=1e-15)
-    print(result)
+    result = minimize(func, angles, tol=1e-12)
     return result.x
 
 
 def find_minima_antigradient(angles, m):
     angles = np.copy(angles)
-    for j in range(100000):
+    for j in range(1000000):
         G = gradient(angles, m)
         force = LA.norm(G)
 
@@ -117,10 +147,13 @@ def path_tanget(i, path, energies):
     return tau / LA.norm(tau)
 
 
+def distances_between_images(path):
+    distances = np.array([LA.norm(path[i - 1] - path[i]) for i in range(1, len(path))])
+    return distances
 
 def mep(number_of_images, initial_state, final_state):
-    path = np.ndarray(shape=(number_of_images, N), dtype=float)
-    velocities = np.ndarray(shape=(number_of_images, N), dtype=float)
+    path = np.zeros(shape=(number_of_images, N), dtype=float)
+    velocities = np.zeros(shape=(number_of_images, N), dtype=float)
     energies = np.zeros((number_of_images,))
     gradients = [None] * number_of_images
 
@@ -134,24 +167,24 @@ def mep(number_of_images, initial_state, final_state):
 
     while True:
         for j in range(1, number_of_images - 1):
-            gradients[j] = gradient(path[j], M)
-            energies[j] = energy(path[j], M)
+            gradients[j], energies[j] = gradient(path[j], M), energy(path[j], M)
 
         max_energy_point = np.argmax(energies)
         result_force = np.zeros((N,))
+
         for i in range(1, number_of_images - 1):
             tau_vector = path_tanget(i, path, energies)
-            spring_force = [0.0] * N
+            spring_force = np.zeros((N,))
             gradient_projection = 0.0
             spring_force_projection = 0.0
 
-            for j in range(N):
-                spring_force[j] =  0.5 * (path[i + 1, j] + path[i - 1, j] - 2 * path[i, j])
+            for j in range(1, N):
+                spring_force[j] = 1.5 * (path[i + 1, j] + path[i - 1, j] - 2 * path[i, j])
                 gradient_projection += gradients[i][j] * tau_vector[j]
                 spring_force_projection += spring_force[j] * tau_vector[j]
 
-            perp_V = [0] * N
-            for j in range(N):
+            perp_V = np.zeros((N,))
+            for j in range(1, N):
                 if i == max_energy_point:
                     perp_V[j] = -gradients[i][j] + 2 * tau_vector[j] * gradient_projection
                 else:
@@ -162,36 +195,43 @@ def mep(number_of_images, initial_state, final_state):
             for j in range(N):
                 path[i, j] += shift[j]
 
-        print(LA.norm(result_force))
-
-        if abs(LA.norm(result_force)) < 1e-5:
+        force = LA.norm(result_force)
+        if abs(force) < 1e-5:
+            print(distances_between_images(path))
             break
     return path
 
 
 def calculate_step_quick(perp_v, n, velocities):
     s = np.zeros((N,))
-    fv, fd, mass, dt = 0, 0, 1, 0.1
+    fv, fd, mass, dt = 0.0, 0.0, 20.0, 0.1
 
-    tmp = 0
+    tmp = 0.0
     for i in range(N):
         tmp = perp_v[i] * velocities[n, i]
-        if tmp < 0:
-            velocities[n, i] = 0
+        if tmp < 0.0:
+            velocities[n, i] = 0.0
         else:
             fv += tmp
         fd += perp_v[i] * perp_v[i]
 
-    tmp = 0
+    tmp = 0.0
     for i in range(N):
         velocities[n, i] = perp_v[i] * (fv / fd + dt / mass)
         s[i] = velocities[n, i] * dt
+    if LA.norm(s) > 1:
+        s /= LA.norm(s)
+    return s
 
-    return s / LA.norm(s)
 
+minimas = [find_minima_numpy(i, M) for i in initial_guess]
 
-res1, res2 = find_minima_antigradient(dot1, M), find_minima_antigradient(dot2, M)
-result = mep(7, res1, res2)
-for i in result:
-    plot(i)
-#print(res)
+for m in minimas:
+    plot_magnetic_moments(m)
+
+path = mep(25, minimas[0], minimas[1])
+
+for i, image in enumerate(path):
+    plot_magnetic_moments(image)
+
+plot_energies_along_path(nd.array([(i, energy(image, M)) for i, image in enumerate(path)]))
